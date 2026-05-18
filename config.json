@@ -1,0 +1,36 @@
+{
+  "agent": {
+    "context_limits": {
+      "local": 8192,
+      "cloud": 32768
+    }
+  },
+  "paths": {
+    "sessions_base": "./sessions"
+  },
+  "hitl": {
+    "enabled": true,
+    "medium_requires_approval": false,
+    "auto_approve_session": true,
+    "approval_timeout_seconds": 300,
+    "escalation_keywords": {
+      "critical": [
+        "rm ", "del ", "rmdir", "format", "mkfs", "dd ",
+        "shutdown", "reboot", "passwd", "useradd",
+        "chmod 777", "chown", ":(){ :|:& };:"
+      ]
+    },
+    "sensitive_paths": [
+      "/etc/passwd", "/etc/shadow", "~/.ssh", "~/.gnupg",
+      "C:\\Windows\\System32"
+    ],
+    "risk_overrides": {
+      "smart_search_learnings": "low",
+      "record_learning": "medium",
+      "execute_command": "high",
+      "install_python_package": "high",
+      "fuzz_web_endpoint": "critical",
+      "fetch_web_content": "medium"
+    }
+  }
+}

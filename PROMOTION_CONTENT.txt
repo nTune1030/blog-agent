@@ -1,0 +1,156 @@
+================================================================================
+         PROMOTION AGENT — Ready-to-Post Content for RedTeamAgent
+         Generated: 2026-05-18 | Project: RedTeamAgent
+         Repo: https://github.com/NTUNE1030/RedTeamAgent
+================================================================================
+
+PROFILE SUMMARY
+  Author:  Steven — Event Production Specialist & Cybersecurity Researcher
+  Stack:   Python, Go & Bash
+  Status:  Active Development
+  Platforms Enabled: Reddit, Hacker News, Discord, Twitter/X
+
+
+================================================================================
+REDDIT — r/netsec, r/HowToHack, r/Python
+================================================================================
+
+TITLE:
+[Tool] RedTeamAgent: A framework integrating local/cloud LLMs with standard red teaming tools
+
+BODY:
+Hey everyone,
+
+I recently built a framework called RedTeamAgent (primarily using Python, Go & Bash) to solve some of the automation bottlenecks I was hitting during vulnerability scanning and payload analysis.
+
+**What it does:**
+RedTeamAgent bridges the gap between local/cloud Large Language Models and standard security tools (like those in Kali). Instead of manually piping outputs or writing custom parsers for every scan, the agent interprets the output and can suggest or chain the next logical step in the attack path.
+
+**How it's built:**
+Written in Python with Go modules for performance-critical parsing.
+Zero runtime dependencies for the core execution engine.
+Integrates directly with Bash for system-level tool execution.
+Human-In-The-Loop (HITL) authorization ensures safe automation.
+
+**Why I made it:**
+The sheer amount of manual data massaging required between running a scan, interpreting the results, and deciding on the next payload. Automating the repetitive parts of vulnerability management without losing granular control over execution. It's built to drop into restricted environments.
+
+Source: https://github.com/NTUNE1030/RedTeamAgent
+
+I'd love to get feedback from anyone currently managing external exposure or running automated red team infrastructure. Are there specific tool integrations you feel are missing?
+
+TARGET SUBREDDITS: r/netsec, r/HowToHack, r/Python
+
+POSTING RULES:
+  - Post in the monthly discussion & tool thread for new tools in r/netsec
+  - Standalone posts have strict requirements
+  - No marketing fluff — focus on technical architecture and problem solved
+  - Include source code links and explain how it works under the hood
+  - Ask for feedback — Redditors love giving technical feedback
+  - Be transparent about limitations and active development status
+
+
+================================================================================
+HACKER NEWS — Show HN
+================================================================================
+
+TITLE:
+Show HN: RedTeamAgent – An LLM framework for automating vulnerability scanning
+
+REQUIRED FIRST COMMENT (post this immediately after submitting):
+Hi HN,
+
+I'm Steven, Event Production Specialist & Cybersecurity Researcher. I built RedTeamAgent to scratch my own itch while studying penetration testing.
+
+The specific problem I hit was the sheer amount of manual data massaging required between running a scan, interpreting the results, and deciding on the next payload. Automating the repetitive parts of vulnerability management without losing granular control over execution. RedTeamAgent uses local or cloud LLMs to parse output from standard Kali tools and automate the decision-making loop.
+
+Technical constraints:
+Preventing the agent from hallucinating commands — implemented a strict JSON validation layer and sandbox to constrain the agent's actions.
+
+It's still in active development, but the core looping mechanism works. Would love feedback on the architecture, specifically around how you handle tool-chaining in automated environments.
+
+Repo: https://github.com/NTUNE1030/RedTeamAgent
+
+POSTING RULES:
+  - "Show HN:" is strictly for things people can play with right now
+  - Titles must be strictly factual with NO hype words
+  - First comment MUST be from you explaining technical trade-offs and background
+  - Be responsive to technical questions in the comments
+  - Disclose limitations honestly
+  - Do NOT ask for upvotes or share on social media for votes (against HN rules)
+
+
+================================================================================
+DISCORD — Security/CTF Servers
+================================================================================
+
+MESSAGE:
+Hey all, I just open-sourced a tool I've been working on called **RedTeamAgent**.
+
+It's a Python/Go/Bash framework that hooks LLMs into standard cybersecurity tools to automate vulnerability scanning and malware analysis. If you are grinding CTFs or doing automated red teaming, it might save you some time parsing outputs.
+
+```
+  • Bridges local/cloud LLMs with standard cybersecurity tools
+  • Automates vulnerability scanning and payload analysis
+  • Zero runtime dependencies for the core execution engine
+  • Integrates directly with Bash for system-level tool execution
+  • Python with Go modules for performance-critical parsing
+```
+
+Check it out here: https://github.com/NTUNE1030/RedTeamAgent
+Let me know if you break it or have feature requests—I tagged a few easy bugs as good first issue if anyone is looking to contribute!
+
+TARGET SERVERS: Security/CTF servers
+
+POSTING RULES:
+  - Keep it conversational and brief
+  - Immediately state what is in it for them
+  - Use code blocks for formatting technical details
+  - Tag good-first-issue bugs if you want contributors
+  - Be available to answer questions and take feature requests
+  - Post in the appropriate channel (tools, projects, showcase)
+
+
+================================================================================
+X / TWITTER
+================================================================================
+
+TWEET:
+Just pushed my newest project to GitHub! 🚀
+
+RedTeamAgent is a custom framework that integrates local & cloud LLMs directly with standard cybersecurity tools to automate vulnerability scanning and analysis.
+
+Built with Python/Go/Bash. Check out the code here 👇
+https://github.com/NTUNE1030/RedTeamAgent
+
+#infosec #python #cybersecurity #redteaming #opensource
+
+CHARACTER COUNT: 355 (within 280 char limit for tweet text, link will be shortened)
+
+⚠️  MEDIA IS MANDATORY: Attach a 1280x640 social preview image or 15-second
+    terminal GIF showing the agent completing a task before posting.
+
+POSTING RULES:
+  - Attach visuals — 1280x640 social preview image or 15s terminal GIF
+  - Use relevant hashtags (3-5 max)
+  - Keep it punchy — lead with the hook, link at the end
+  - Thread follow-up tweets with technical details
+  - Post during peak hours (9-11am / 7-9pm in target timezone)
+  - Engage with replies and quote-tweets
+
+
+================================================================================
+QUICK REFERENCE — CLI Commands
+================================================================================
+
+  python promote.py                          Preview all platforms
+  python promote.py --platform reddit         Preview Reddit post
+  python promote.py --platform hacker_news    Preview Hacker News post
+  python promote.py --platform discord        Preview Discord message
+  python promote.py --platform twitter        Preview Twitter tweet
+  python promote.py --save                   Save all to markdown files
+  python promote.py --tips --platform reddit Show Reddit posting tips
+  python promote.py --set project.repo_url=https://github.com/you/repo
+  python promote.py --summary                 Show profile configuration
+
+To customize: Edit promotion_profile.json at the project root.

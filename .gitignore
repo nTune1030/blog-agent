@@ -1,0 +1,42 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Virtual environments
+venv/
+.venv/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Session data (runtime logs, reports, manifests)
+sessions/session_*/
+
+# ChromaDB persistent storage (binary data, regenerated on use)
+memory/chroma.sqlite3
+memory/*.sqlite3
+
+# Environment variables
+.env
+.env.local
+
+# Promotion profile (contains plaintext API credentials — NEVER commit)
+promotion_profile.json
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
