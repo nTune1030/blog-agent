@@ -238,6 +238,126 @@ async def _reddit_login_async(page, username: str, password: str, timeout: int =
         return False
 
 
+async def _fill_reddit_post_form(page, clean_sub: str, title: str, body: str) -> str:
+    """Fill the Reddit submit form on the current page.
+
+    Handles Reddit's current rich text editor which uses contenteditable divs
+    instead of standard textarea/input elements.
+
+    Args:
+        page: Playwright page already on the submit form
+        clean_sub: Subreddit name (no 'r/' prefix)
+        title: Post title
+        body: Post body text
+
+    Returns:
+        Empty string on success, or error message on failure.
+    """
+    # Switch to Text tab (Reddit defaults to "Link" or shows tabs)
+    for selector in ["button:has-text('Text')", "button[data-testid='text-tab']"]:
+        try:
+            tab = await page.query_selector(selector)
+            if tab:
+                await tab.click()
+                await page.wait_for_timeout(1000)
+                logger.info(f"Clicked Text tab: {selector}")
+                break
+        except Exception:
+            continue
+
+    # Fill title — Reddit uses a textarea with placeholder "Title*" and "0/100" counter
+    title_filled = False
+    title_selectors = [
+        'textarea[placeholder*="Title"]',
+        'textarea[placeholder*="title"]',
+        'div[contenteditable="true"][aria-label*="Title"]',
+        'input[name="title"]',
+        'textarea[name="title"]',
+    ]
+    for selector in title_selectors:
+        try:
+            field = await page.wait_for_selector(selector, timeout=5000)
+            if field:
+                await field.click()
+                await field.fill(title)
+                title_filled = True
+                logger.info(f"Filled title field: {selector}")
+                break
+        except Exception:
+            continue
+
+    if not title_filled:
+        return "[ERROR] Could not find title field on Reddit submit page."
+
+    await page.wait_for_timeout(500)
+
+    # Fill body — Reddit uses a contenteditable div (rich text editor)
+    # with label "Body text (optional)". Standard textarea fill() won't work
+    # on contenteditable divs, so we use keyboard typing or JS injection.
+    body_filled = False
+
+    # Strategy 1: Try contenteditable div (Reddit's current rich text editor)
+    body_selectors = [
+        'div[contenteditable="true"][aria-label*="Body"]',
+        'div[contenteditable="true"][data-placeholder*="Body"]',
+        'div[contenteditable="true"][aria-label*="text"]',
+        'div[contenteditable="true"][data-placeholder*="text"]',
+        'div[role="textbox"][contenteditable="true"]',
+    ]
+    for selector in body_selectors:
+        try:
+            field = await page.query_selector(selector)
+            if field:
+                # Check it's not the title field
+                aria_label = (await field.get_attribute('aria-label') or '').lower()
+                data_placeholder = (await field.get_attribute('data-placeholder') or '').lower()
+                if 'title' in aria_label and 'body' not in aria_label:
+                    continue
+                if 'title' in data_placeholder and 'body' not in data_placeholder:
+                    continue
+
+                # Click to focus the contenteditable div
+                await field.click()
+                await page.wait_for_timeout(300)
+
+                # Type the body text using keyboard (works with contenteditable)
+                # Split into lines to handle newlines properly
+                lines = body.split('\n')
+                for i, line in enumerate(lines):
+                    await page.keyboard.type(line, delay=5)
+                    if i < len(lines) - 1:
+                        await page.keyboard.press('Enter')
+
+                body_filled = True
+                logger.info(f"Filled body field (contenteditable): {selector}")
+                break
+        except Exception:
+            continue
+
+    # Strategy 2: Fallback to standard textarea (older Reddit UI)
+    if not body_filled:
+        for selector in ["textarea[placeholder*='Text']", "textarea[placeholder*='text']", "textarea[name='text']"]:
+            try:
+                field = await page.query_selector(selector)
+                if field:
+                    placeholder = (await field.get_attribute('placeholder') or '').lower()
+                    name = (await field.get_attribute('name') or '').lower()
+                    if 'title' in name or 'title' in placeholder:
+                        continue
+                    await field.click()
+                    await field.fill(body)
+                    body_filled = True
+                    logger.info(f"Filled body field (textarea): {selector}")
+                    break
+            except Exception:
+                continue
+
+    if not body_filled:
+        return "[ERROR] Could not find body/text field on Reddit submit page."
+
+    return ""  # Success
+
+
 async def _open_reddit_post_form_async(subreddit: str, title: str, body: str) -> str:
     """Async: Open Reddit, log in, fill post form, keep browser open for user to click Post."""
     creds = _load_credentials()
@@ -265,54 +385,10 @@ async def _open_reddit_post_form_async(subreddit: str, title: str, body: str) ->
         await page.goto(submit_url, wait_until='networkidle', timeout=30000)
         await page.wait_for_timeout(3000)
 
-        # Switch to Text tab
-        for selector in ["button[data-testid='text-tab']", "button:has-text('Text')"]:
-            try:
-                tab = await page.query_selector(selector)
-                if tab:
-                    await tab.click()
-                    await page.wait_for_timeout(1000)
-                    break
-            except Exception:
-                continue
-
-        # Fill title
-        title_filled = False
-        for selector in ["textarea[placeholder*='Title']", "input[name='title']", "textarea[name='title']"]:
-            try:
-                field = await page.wait_for_selector(selector, timeout=5000)
-                if field:
-                    await field.click()
-                    await field.fill(title)
-                    title_filled = True
-                    break
-            except Exception:
-                continue
-
-        if not title_filled:
-            return "[ERROR] Could not find title field on Reddit submit page."
-
-        await page.wait_for_timeout(500)
-
-        # Fill body
-        body_filled = False
-        for selector in ["textarea[placeholder*='Text']", "textarea[name='text']"]:
-            try:
-                field = await page.query_selector(selector)
-                if field:
-                    placeholder = (await field.get_attribute('placeholder') or '').lower()
-                    name = (await field.get_attribute('name') or '').lower()
-                    if 'title' in name or 'title' in placeholder:
-                        continue
-                    await field.click()
-                    await field.fill(body)
-                    body_filled = True
-                    break
-            except Exception:
-                continue
-
-        if not body_filled:
-            return "[ERROR] Could not find body/text field on Reddit submit page."
+        # Fill the form
+        error = await _fill_reddit_post_form(page, clean_sub, title, body)
+        if error:
+            return error
 
         # Take screenshot
         screenshot_path = os.path.join(
@@ -378,60 +454,21 @@ async def _post_to_reddit_browser_async(subreddit: str, title: str, body: str) -
         await page.goto(submit_url, wait_until='networkidle', timeout=30000)
         await page.wait_for_timeout(3000)
 
-        # Switch to Text tab
-        for selector in ["button[data-testid='text-tab']", "button:has-text('Text')"]:
-            try:
-                tab = await page.query_selector(selector)
-                if tab:
-                    await tab.click()
-                    await page.wait_for_timeout(1000)
-                    break
-            except Exception:
-                continue
-
-        # Fill title
-        title_filled = False
-        for selector in ["textarea[placeholder*='Title']", "input[name='title']", "textarea[name='title']"]:
-            try:
-                field = await page.wait_for_selector(selector, timeout=5000)
-                if field:
-                    await field.click()
-                    await field.fill(title)
-                    title_filled = True
-                    break
-            except Exception:
-                continue
-
-        if not title_filled:
-            return "[ERROR] Could not find title field on Reddit submit page."
-
-        await page.wait_for_timeout(500)
-
-        # Fill body
-        body_filled = False
-        for selector in ["textarea[placeholder*='Text']", "textarea[name='text']"]:
-            try:
-                field = await page.query_selector(selector)
-                if field:
-                    placeholder = (await field.get_attribute('placeholder') or '').lower()
-                    name = (await field.get_attribute('name') or '').lower()
-                    if 'title' in name or 'title' in placeholder:
-                        continue
-                    await field.click()
-                    await field.fill(body)
-                    body_filled = True
-                    break
-            except Exception:
-                continue
-
-        if not body_filled:
-            return "[ERROR] Could not find body/text field on Reddit submit page."
+        # Fill the form
+        error = await _fill_reddit_post_form(page, clean_sub, title, body)
+        if error:
+            return error
 
         await page.wait_for_timeout(1000)
 
         # Click Post button
         print(f"{Colors.CYAN}[*] Submitting post...{Colors.RESET}")
-        for selector in ["button[data-testid='submit-post']", "button[type='submit']", "button:has-text('Post')"]:
+        post_selectors = [
+            "button:has-text('Post')",
+            "button[data-testid='submit-post']",
+            "button[type='submit']",
+        ]
+        for selector in post_selectors:
             try:
                 btn = await page.query_selector(selector)
                 if btn:
