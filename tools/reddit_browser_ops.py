@@ -129,9 +129,10 @@ async def _reddit_login_async(page, username: str, password: str, timeout: int =
         True if login succeeded, False otherwise
     """
     try:
-        # Navigate to login
+        # Navigate to login — use 'domcontentloaded' instead of 'networkidle'
+        # because Reddit never reaches a fully idle network state (analytics, websockets, etc.)
         print(f"{Colors.CYAN}[*] Navigating to Reddit login...{Colors.RESET}")
-        await page.goto('https://www.reddit.com/login/', wait_until='networkidle', timeout=60000)
+        await page.goto('https://www.reddit.com/login/', wait_until='domcontentloaded', timeout=60000)
         await page.wait_for_timeout(3000)
 
         # Check if we got past the JS challenge
@@ -253,6 +254,9 @@ async def _fill_reddit_post_form(page, clean_sub: str, title: str, body: str) ->
     Returns:
         Empty string on success, or error message on failure.
     """
+    # Wait for the form to fully render after domcontentloaded
+    await page.wait_for_timeout(5000)
+
     # Switch to Text tab (Reddit defaults to "Link" or shows tabs)
     for selector in ["button:has-text('Text')", "button[data-testid='text-tab']"]:
         try:
@@ -276,7 +280,7 @@ async def _fill_reddit_post_form(page, clean_sub: str, title: str, body: str) ->
     ]
     for selector in title_selectors:
         try:
-            field = await page.wait_for_selector(selector, timeout=5000)
+            field = await page.wait_for_selector(selector, timeout=10000)
             if field:
                 await field.click()
                 await field.fill(title)
@@ -291,12 +295,12 @@ async def _fill_reddit_post_form(page, clean_sub: str, title: str, body: str) ->
 
     await page.wait_for_timeout(500)
 
-    # Fill body — Reddit uses a contenteditable div (rich text editor)
-    # with label "Body text (optional)". Standard textarea fill() won't work
-    # on contenteditable divs, so we use keyboard typing or JS injection.
+    # Fill body — Reddit uses a contenteditable div (rich text editor).
+    # Standard textarea fill() won't work on contenteditable divs,
+    # so we use keyboard typing instead.
     body_filled = False
 
-    # Strategy 1: Try contenteditable div (Reddit's current rich text editor)
+    # Strategy 1: Try contenteditable div with specific attributes
     body_selectors = [
         'div[contenteditable="true"][aria-label*="Body"]',
         'div[contenteditable="true"][data-placeholder*="Body"]',
@@ -321,7 +325,6 @@ async def _fill_reddit_post_form(page, clean_sub: str, title: str, body: str) ->
                 await page.wait_for_timeout(300)
 
                 # Type the body text using keyboard (works with contenteditable)
-                # Split into lines to handle newlines properly
                 lines = body.split('\n')
                 for i, line in enumerate(lines):
                     await page.keyboard.type(line, delay=5)
@@ -334,7 +337,33 @@ async def _fill_reddit_post_form(page, clean_sub: str, title: str, body: str) ->
         except Exception:
             continue
 
-    # Strategy 2: Fallback to standard textarea (older Reddit UI)
+    # Strategy 2: Generic contenteditable div fallback — find any contenteditable
+    # div that is NOT the title field. The title is a textarea, so any
+    # contenteditable div on the page should be the body editor.
+    if not body_filled:
+        try:
+            editables = await page.query_selector_all('div[contenteditable="true"]')
+            for el in editables:
+                # Skip if this is the title (title is usually a textarea, not a div)
+                tag = await el.evaluate('e => e.tagName')
+                if tag == 'TEXTAREA' or tag == 'INPUT':
+                    continue
+                # Click to focus
+                await el.click()
+                await page.wait_for_timeout(300)
+                # Type the body text
+                lines = body.split('\n')
+                for i, line in enumerate(lines):
+                    await page.keyboard.type(line, delay=5)
+                    if i < len(lines) - 1:
+                        await page.keyboard.press('Enter')
+                body_filled = True
+                logger.info("Filled body field (generic contenteditable fallback)")
+                break
+        except Exception:
+            pass
+
+    # Strategy 3: Fallback to standard textarea (older Reddit UI)
     if not body_filled:
         for selector in ["textarea[placeholder*='Text']", "textarea[placeholder*='text']", "textarea[name='text']"]:
             try:
@@ -382,7 +411,7 @@ async def _open_reddit_post_form_async(subreddit: str, title: str, body: str) ->
         # Navigate to submit page
         submit_url = f"https://www.reddit.com/r/{clean_sub}/submit"
         print(f"{Colors.CYAN}[*] Navigating to r/{clean_sub} submit page...{Colors.RESET}")
-        await page.goto(submit_url, wait_until='networkidle', timeout=30000)
+        await page.goto(submit_url, wait_until='domcontentloaded', timeout=30000)
         await page.wait_for_timeout(3000)
 
         # Fill the form
@@ -451,7 +480,7 @@ async def _post_to_reddit_browser_async(subreddit: str, title: str, body: str) -
         # Navigate to submit page
         submit_url = f"https://www.reddit.com/r/{clean_sub}/submit"
         print(f"{Colors.CYAN}[*] Navigating to r/{clean_sub} submit page...{Colors.RESET}")
-        await page.goto(submit_url, wait_until='networkidle', timeout=30000)
+        await page.goto(submit_url, wait_until='domcontentloaded', timeout=30000)
         await page.wait_for_timeout(3000)
 
         # Fill the form
