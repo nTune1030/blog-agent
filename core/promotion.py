@@ -67,7 +67,7 @@ Repo: {repo_url}"""
 
 DISCORD_TEMPLATE = """Hey all, I just open-sourced a tool I've been working on called **{project_name}**.
 
-It's a {tech_stack_inline} framework — {tagline}. If you're building with LLMs or need safe autonomous tool execution, it might save you some serious setup time.
+It's a {tech_stack_inline} project — {tagline}. Check it out if you're interested in {target_audience_inline}.
 
 ```
 {key_features_inline}
@@ -76,15 +76,15 @@ It's a {tech_stack_inline} framework — {tagline}. If you're building with LLMs
 Check it out here: {repo_url}
 Let me know if you break it or have feature requests{good_first_issues_note}!"""
 
-TWITTER_TEMPLATE = """🚀 {project_name} — {tech_stack_inline} {tagline_no_article}. HITL auth keeps you in control.
+TWITTER_TEMPLATE = """🚀 {project_name} — {tech_stack_inline} {tagline_no_article}.
 
 {repo_url}
 
-#python #opensource #llm"""
+{hashtags}"""
 
 TWITTER_THREAD_TEMPLATE = """🧵 Thread: {project_name}
 
-{project_name} is an autonomous agent framework with HITL authorization, dynamic plugins, and persistent vector memory. Build safe LLM-powered tools without the boilerplate.
+{tagline}
 
 1/{thread_count}"""
 
@@ -92,11 +92,11 @@ TWITTER_THREAD_TWEET = """{project_name} — {thread_point}
 
 {thread_hashtag}"""
 
-TWITTER_THREAD_FINAL = """Built with {tech_stack_inline}. HITL auth ensures you never lose control over execution.
+TWITTER_THREAD_FINAL = """Built with {tech_stack_inline}.
 
 {repo_url}
 
-#python #opensource #llm {thread_count}/{thread_count}"""
+{hashtags} {thread_count}/{thread_count}"""
 
 
 class PromotionEngine:
@@ -138,6 +138,52 @@ class PromotionEngine:
                             "repo_url": "", "good_first_issues": False, "status": "active_development"},
                 "platforms": {}
             }
+
+    # ─── Repo Injection ────────────────────────────────────────────────
+
+    def inject_repo(self, repo_data: dict) -> None:
+        """Inject a scanned repo's metadata into the promotion profile.
+
+        Replaces the project section of the in-memory profile with data
+        from a GitHub repo scan, enabling promotion of any repo without
+        editing promotion_profile.json on disk.
+
+        Args:
+            repo_data: Dict with project fields (name, tagline, description,
+                       tech_stack, key_features, problem_solved, technical_challenge,
+                       target_audience, repo_url, good_first_issues, status).
+                       Extra fields like 'stars', 'forks', 'is_fork' are stored
+                       in profile['project']['_scan_meta'] for reference.
+        """
+        project = self.profile.setdefault("project", {})
+
+        # Map repo_data fields to profile project fields
+        field_map = {
+            "name": "name",
+            "tagline": "tagline",
+            "description": "description",
+            "tech_stack": "tech_stack",
+            "key_features": "key_features",
+            "problem_solved": "problem_solved",
+            "technical_challenge": "technical_challenge",
+            "target_audience": "target_audience",
+            "repo_url": "repo_url",
+            "good_first_issues": "good_first_issues",
+            "status": "status",
+        }
+
+        for src_key, dst_key in field_map.items():
+            if src_key in repo_data:
+                project[dst_key] = repo_data[src_key]
+
+        # Store scan metadata separately (stars, forks, etc.)
+        scan_meta_keys = ["stars", "forks", "is_fork", "language", "topics", "readme_excerpt"]
+        scan_meta = {k: repo_data[k] for k in scan_meta_keys if k in repo_data}
+        if scan_meta:
+            project["_scan_meta"] = scan_meta
+
+        print(f"{Colors.GREEN}[*] Injected repo '{repo_data.get('name', '?')}' into promotion profile{Colors.RESET}")
+        logger.info(f"Injected repo data for '{repo_data.get('name', '?')}' into promotion profile")
 
     # ─── Helper Methods ────────────────────────────────────────────────
 
@@ -210,6 +256,46 @@ class PromotionEngine:
             parts.append(f"Built with {self._tech_stack_str()}.")
 
         return "\n".join(parts)
+
+    def _target_audience_inline(self) -> str:
+        """Format target audience as a short inline phrase for Discord."""
+        audience = self._get("project.target_audience", "")
+        if not audience:
+            return "open-source tools"
+        # Shorten common patterns
+        audience = audience.replace("Developers and practitioners in ", "")
+        audience = audience.replace("Developers interested in ", "")
+        audience = audience.replace("Developers working with ", "")
+        return audience
+
+    def _hashtags(self) -> str:
+        """Derive Twitter hashtags from project language and topics."""
+        stack = self._get("project.tech_stack", [])
+        topics = self._get("project._scan_meta.topics", [])
+        tags = set()
+
+        # Always include #opensource
+        tags.add("#opensource")
+
+        # Add language-based hashtag
+        if stack:
+            lang = stack[0].lower()
+            lang_map = {"python": "#python", "javascript": "#javascript", "typescript": "#typescript",
+                        "go": "#golang", "rust": "#rustlang", "java": "#java", "c++": "#cpp",
+                        "c#": "#csharp", "ruby": "#ruby", "php": "#php"}
+            if lang in lang_map:
+                tags.add(lang_map[lang])
+            else:
+                tags.add(f"#{lang}")
+
+        # Add up to 2 topic-based hashtags
+        for t in topics[:2]:
+            tag = t.replace("-", "").replace(" ", "").lower()
+            if len(tag) > 2:
+                tags.add(f"#{tag}")
+
+        # Cap at 4 hashtags total
+        return " ".join(list(tags)[:4])
 
     def _good_first_issues_note(self) -> str:
         """Generate the good-first-issues note for Discord."""
@@ -316,6 +402,7 @@ class PromotionEngine:
             project_name=self._get("project.name", "MyProject"),
             tech_stack_inline=self._tech_stack_inline(),
             tagline=self._get("project.tagline", ""),
+            target_audience_inline=self._target_audience_inline(),
             key_features_inline=self._key_features_inline(),
             repo_url=self._get("project.repo_url", "[Insert Link]"),
             good_first_issues_note=self._good_first_issues_note()
@@ -361,12 +448,19 @@ class PromotionEngine:
             project_name=self._get("project.name", "MyProject"),
             tech_stack_inline=self._tech_stack_inline(),
             tagline_no_article=tagline_no_article,
-            repo_url=self._get("project.repo_url", "[Insert GitHub Link]")
+            repo_url=self._get("project.repo_url", "[Insert GitHub Link]"),
+            hashtags=self._hashtags()
         )
 
         posting_rules = self._get("platforms.twitter.posting_rules", "")
+        default_media = self._get("platforms.twitter.default_media", "")
+        if default_media and os.path.exists(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), default_media)):
+            media_note = f"📷 Media: {default_media}"
+        else:
+            media_note = "⚠️ REQUIRED: Attach a 1280x640 social preview image or 15-second terminal GIF before posting."
         result: dict[str, Any] = {
-            "media_note": "⚠️ REQUIRED: Attach a 1280x640 social preview image or 15-second terminal GIF before posting.",
+            "media_note": media_note,
+            "default_media": default_media,
             "posting_rules": posting_rules,
             "platform": "twitter"
         }
@@ -389,7 +483,7 @@ class PromotionEngine:
             # Tweet 1: Opener
             opener = TWITTER_THREAD_TEMPLATE.format(
                 project_name=self._get("project.name", "MyProject"),
-                tech_stack_inline=self._tech_stack_inline(),
+                tagline=self._get("project.tagline", ""),
                 thread_count=thread_count
             )
             # Truncate opener to 280 if needed
@@ -412,6 +506,7 @@ class PromotionEngine:
             final = TWITTER_THREAD_FINAL.format(
                 tech_stack_inline=self._tech_stack_inline(),
                 repo_url=self._get("project.repo_url", "[Insert GitHub Link]"),
+                hashtags=self._hashtags(),
                 thread_count=thread_count
             )
             if len(final) > 280:

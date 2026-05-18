@@ -1,0 +1,161 @@
+{
+  "repos": {
+    "blog-agent": {
+      "promoted_at": "2026-05-18T11:30:22.385208",
+      "repo_data": {
+        "name": "blog-agent",
+        "tagline": "Autonomous Promotion Framework — ReAct-style AI agent with HITL authorization, dynamic plugin system, and platform-specific promotion engine",
+        "description": "Autonomous Promotion Framework — ReAct-style AI agent with HITL authorization, dynamic plugin system, and platform-specific promotion engine",
+        "tech_stack": [
+          "Python"
+        ],
+        "key_features": [
+          "Open-source Python project"
+        ],
+        "problem_solved": "Autonomous Promotion Framework — ReAct-style AI agent with HITL authorization, dynamic plugin system, and platform-specific promotion engine",
+        "technical_challenge": "Built primarily with Python. Designed for practical, real-world use.",
+        "target_audience": "Developers working with Python",
+        "repo_url": "https://github.com/nTune1030/blog-agent",
+        "good_first_issues": false,
+        "status": "active_development",
+        "stars": 0,
+        "forks": 0,
+        "is_fork": false,
+        "readme_excerpt": "# 🤖 Blog Agent — Autonomous Promotion Framework\n\nA modular framework for building fully autonomous, self-correcting AI agents powered by large language models. Built by **NTUNE1030**, this project provides a robust foundation—including a ReAct-style core loop, **Human-In-The-Loop (HITL) authorization**, tool dynamic registration, persistent Vector DB memory, and execution telemetry—allowing you to easily construct and deploy specialized personas (e.g., Data Analysts, DevOps Assistants, Web Resea",
+        "language": "Python",
+        "topics": []
+      }
+    },
+    "brute_force": {
+      "promoted_at": "2026-05-18T11:29:47.263952",
+      "repo_data": {
+        "name": "brute_force",
+        "tagline": "Async SSH brute-forcer with configurable concurrency, retry logic, progress tracking, and multiple output formats",
+        "description": "Async SSH brute-forcer with configurable concurrency, retry logic, progress tracking, and multiple output formats",
+        "tech_stack": [
+          "Python"
+        ],
+        "key_features": [
+          "Async support",
+          "Asyncssh support",
+          "Brute Force support",
+          "Cybersecurity support",
+          "Penetration Testing support"
+        ],
+        "problem_solved": "Async SSH brute-forcer with configurable concurrency, retry logic, progress tracking, and multiple output formats",
+        "technical_challenge": "Built primarily with Python. Community-validated with 1 star. Designed for practical, real-world use.",
+        "target_audience": "Developers and practitioners in async, asyncssh, brute force",
+        "repo_url": "https://github.com/nTune1030/brute_force",
+        "good_first_issues": false,
+        "status": "active_development",
+        "stars": 1,
+        "forks": 0,
+        "is_fork": false,
+        "readme_excerpt": "# SSH Brute-Forcer\n\n[![Python 3.9+](https://img.shields.io/badge/python-3.9%2B-blue.svg)](https://www.python.org/downloads/)\n[![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)\n[![asyncssh](https://img.shields.io/badge/depends-asyncssh-orange.svg)](https://pypi.org/project/asyncssh/)\n\nAsync, concurrent SSH credential testing tool built on `asyncssh`. Supports configurable parallelism, retry logic with exponential backoff, progress tracking with ETA, banner grabbing, an",
+        "language": "Python",
+        "topics": [
+          "async",
+          "asyncssh",
+          "brute-force",
+          "cybersecurity",
+          "penetration-testing",
+          "python",
+          "security",
+          "ssh"
+        ]
+      }
+    },
+    "admin-finder": {
+      "promoted_at": null,
+      "repo_data": {
+        "name": "admin-finder",
+        "tagline": "🔍 Async admin panel discovery tool — fast, smart, and ethical.",
+        "description": "🔍 Async admin panel discovery tool — fast, smart, and ethical.",
+        "tech_stack": [
+          "Python"
+        ],
+        "key_features": [
+          "Open-source Python project"
+        ],
+        "problem_solved": "🔍 Async admin panel discovery tool — fast, smart, and ethical.",
+        "technical_challenge": "Built primarily with Python. Designed for practical, real-world use.",
+        "target_audience": "Developers working with Python",
+        "repo_url": "https://github.com/nTune1030/admin-finder",
+        "good_first_issues": false,
+        "status": "active_development",
+        "stars": 0,
+        "forks": 0,
+        "is_fork": false,
+        "readme_excerpt": "# 🔍 Admin Finder v2.0\n\n**Async admin panel discovery tool** — fast, smart, and ethical.\n\nAdmin Finder scans web servers for admin panels, login pages, and backend interfaces using asynchronous HTTP requests with controlled concurrency. It analyzes response content to identify login forms and prioritizes the most relevant results.\n\n> ⚠️ **Ethical use only.** Ensure you have explicit permission before scanning any target. Unauthorized scanning may violate laws and terms of service.\n\n---\n\n## ✨ Feat",
+        "language": "Python",
+        "topics": []
+      }
+    },
+    "hunt_malware": {
+      "promoted_at": null,
+      "repo_data": {
+        "name": "hunt_malware",
+        "tagline": "Host-based threat hunting tool that scans for IOCs using keyword/signature matching and behavioral/heuristic analysis",
+        "description": "Host-based threat hunting tool that scans for IOCs using keyword/signature matching and behavioral/heuristic analysis",
+        "tech_stack": [
+          "Python"
+        ],
+        "key_features": [
+          "Blue Team support",
+          "Ioc Scanner support",
+          "Malware Detection support",
+          "Python support",
+          "Security support"
+        ],
+        "problem_solved": "Host-based threat hunting tool that scans for IOCs using keyword/signature matching and behavioral/heuristic analysis",
+        "technical_challenge": "Built primarily with Python. Designed for practical, real-world use.",
+        "target_audience": "Developers and practitioners in blue team, ioc scanner, malware detection",
+        "repo_url": "https://github.com/nTune1030/hunt_malware",
+        "good_first_issues": false,
+        "status": "active_development",
+        "stars": 0,
+        "forks": 0,
+        "is_fork": false,
+        "readme_excerpt": "# hunt_malware — Automated Blue Team Scanner\n\n**Version:** 2.1.0  \n**Requires:** Python 3.8+, Administrator/Root privileges, `psutil` package\n\n---\n\n## Overview\n\n`hunt_malware` is a host-based threat hunting tool that scans a live Windows or Linux system for indicators of compromise (IOCs). It combines **keyword/signature matching** with **behavioral and heuristic analysis** to detect both known malware tools and fileless/living-off-the-land attacks that traditional signature scanners miss.\n\n## D",
+        "language": "Python",
+        "topics": [
+          "blue-team",
+          "ioc-scanner",
+          "malware-detection",
+          "python",
+          "security",
+          "threat-hunting"
+        ]
+      }
+    },
+    "dark-spider": {
+      "promoted_at": null,
+      "repo_data": {
+        "name": "dark-spider",
+        "tagline": "Scans known credential dump sites on the darkweb.",
+        "description": "Scans known credential dump sites on the darkweb.",
+        "tech_stack": [
+          "Python"
+        ],
+        "key_features": [
+          "Open-source Python project"
+        ],
+        "problem_solved": "Scans known credential dump sites on the darkweb.",
+        "technical_challenge": "Built primarily with Python. Designed for practical, real-world use.",
+        "target_audience": "Developers working with Python",
+        "repo_url": "https://github.com/nTune1030/dark-spider",
+        "good_first_issues": false,
+        "status": "active_development",
+        "stars": 0,
+        "forks": 1,
+        "is_fork": false,
+        "readme_excerpt": "# 🕷️ Dark Web Info Seek Spider\n\nA multithreaded, recursive spider for monitoring dark web `.onion` sites with keyword and regex matching, JavaScript-rendered page support, and SQLite-backed persistence.\n\n> **⚠️ Disclaimer**: This tool is for educational and research purposes only. The authors are not responsible for how you use this tool. Always obey local laws regarding dark web usage.\n\n---\n\n**New here?** → Read [START_HERE.md](START_HERE.md) for a 5-minute quick-start guide.\n\n---\n\n## How It Wo",
+        "language": "Python",
+        "topics": []
+      }
+    }
+  },
+  "last_scan": "2026-05-18T11:30:22.361065",
+  "scan_count": 4,
+  "current_repo": "blog-agent"
+}

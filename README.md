@@ -348,6 +348,21 @@ python promote.py --save
 # Save a specific platform
 python promote.py --platform hacker_news --save
 
+# Scan GitHub repos and promote the next one in rotation
+python promote.py --scan
+
+# Scan and save the rendered content
+python promote.py --scan --save
+
+# Scan and promote to a specific platform
+python promote.py --scan --platform discord
+
+# List repos in the rotation
+python promote.py --scan --list
+
+# Reset the rotation (all repos become eligible again)
+python promote.py --scan --reset
+
 # Check which platforms are ready to post (API credentials configured)
 python promote.py --readiness
 
@@ -369,6 +384,39 @@ python promote.py --set project.repo_url=https://github.com/NTUNE1030/blog-agent
 # Show profile configuration summary
 python promote.py --summary
 ```
+
+### 🔄 Git Scan & Repo Rotation
+
+The Git Scan feature automatically discovers your public GitHub repos and **rotates through them** so each promotion cycle features a different project. No more posting about the same repo every time.
+
+**How it works:**
+1. `scan_git_repos()` fetches all public repos via the GitHub REST API
+2. Repo metadata (name, description, language, topics, README) is cached in `memory/git_rotation.json`
+3. `get_next_repo_to_promote()` selects the repo promoted longest ago (respecting a cooldown period)
+4. `inject_repo_to_promote()` loads the selected repo's data into the promotion engine
+5. All platform templates render with the new repo's data — no manual profile editing needed
+
+**Rotation state** is persisted in `memory/git_rotation.json` and survives across sessions. Each repo tracks its `promoted_at` timestamp so the rotation avoids repeating.
+
+**Configure in `promotion_profile.json`:**
+
+```json
+{
+  "git_scan": {
+    "username": "NTUNE1030",
+    "exclude_forks": true,
+    "excluded_repos": [],
+    "cooldown_days": 7
+  }
+}
+```
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `username` | Falls back to `identity.github_username` | GitHub user whose repos to scan |
+| `exclude_forks` | `true` | Skip forked repos in rotation |
+| `excluded_repos` | `[]` | List of repo names to skip (e.g., `["dotfiles", "old-project"]`) |
+| `cooldown_days` | `7` | Minimum days between promotions of the same repo |
 
 ### Configure Your Profile
 
@@ -478,6 +526,17 @@ Then ask the agent:
 | `save_promotion_content(platform)` | MEDIUM | Save rendered content to markdown files |
 | `update_promotion_profile(field, value)` | MEDIUM | Update a profile field (dot-notation) |
 | `get_promotion_tips(platform)` | LOW | Get platform-specific posting advice |
+| `scan_and_promote(username, platform)` | LOW | Scan GitHub repos, inject next repo, render content |
+
+### Git Scan Tools (Agent-Callable)
+
+| Tool | Risk | Description |
+|------|------|-------------|
+| `scan_git_repos(username)` | LOW | Scan a GitHub user's public repos and cache for rotation |
+| `get_next_repo_to_promote(cooldown_days)` | LOW | Select the next repo to promote (respects cooldown) |
+| `inject_repo_to_promote(repo_name)` | LOW | Load a repo's data into the promotion engine |
+| `list_promoted_repos()` | LOW | List all repos in rotation with promotion history |
+| `reset_rotation()` | MEDIUM | Clear rotation history so all repos are eligible again |
 
 ### Posting Tools (Agent-Callable — CRITICAL Risk)
 

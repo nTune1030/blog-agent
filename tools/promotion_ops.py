@@ -5,11 +5,15 @@ These tools allow the autonomous agent to render, preview, and save promotional
 content for any supported platform (Reddit, Hacker News, Discord, X/Twitter).
 The agent can also customize the profile fields before rendering.
 
+Includes git scan workflow: scan a GitHub user's repos, rotate through them,
+and generate fresh promotional content for a different repo each cycle.
+
 HITL Risk Classification:
 - render_promotion_post: LOW (read-only, generates text)
 - preview_all_platforms: LOW (read-only, displays text)
 - save_promotion_content: MEDIUM (writes files to disk)
 - update_promotion_profile: MEDIUM (modifies promotion_profile.json)
+- scan_and_promote: LOW (read-only scan + render, no posting)
 """
 
 import json
@@ -249,6 +253,100 @@ def update_promotion_profile(field: str, value: str) -> str:
 
     logger.info(f"Updated promotion profile: {field} = {parsed_value} (was: {old_value})")
     return f"{Colors.GREEN}✅ Updated promotion_profile.json:{Colors.RESET}\n  {field}: {old_value} → {parsed_value}\n\n{Colors.GRAY}The promotion engine will use the new value on next render.{Colors.RESET}"
+
+
+def scan_and_promote(username: str = "", platform: str = "all") -> str:
+    """Scan GitHub repos, inject the next repo into the promotion engine, and render content.
+
+    This is the one-shot workflow for promoting a different repo each cycle:
+    1. Scans the GitHub user's public repos (or uses cached rotation)
+    2. Selects the next repo to promote (respecting cooldown)
+    3. Injects the repo data into the promotion engine
+    4. Renders promotional content for the specified platform(s)
+
+    Args:
+        username: GitHub username to scan. Defaults to the value in
+                  promotion_profile.json → git_scan.username.
+        platform: Platform to render for ('reddit', 'hacker_news', 'discord',
+                  'twitter', or 'all'). Defaults to 'all'.
+
+    Returns:
+        Formatted promotional content for the selected repo and platform(s).
+    """
+    from tools.git_scan_ops import scan_git_repos, get_next_repo_to_promote, inject_repo_to_promote
+
+    # Step 1: Scan repos (refreshes cache from GitHub API)
+    scan_result = scan_git_repos(username)
+    print(scan_result)
+    print()
+
+    # Step 2: Get next repo to promote
+    next_result = get_next_repo_to_promote()
+    print(next_result)
+    print()
+
+    # Step 3: Inject into promotion engine
+    inject_result = inject_repo_to_promote()
+    print(inject_result)
+    print()
+
+    # Step 4: Render content
+    engine = _get_engine()
+    if platform.lower() == "all":
+        all_content = engine.render_all()
+        if not all_content:
+            return f"{Colors.YELLOW}[!] No platforms enabled in promotion_profile.json{Colors.RESET}"
+
+        output = f"\n{Colors.CYAN}{'═' * 55}{Colors.RESET}\n"
+        output += f"{Colors.GREEN}📣 Promotional Content — {engine._get('project.name', 'Unknown')}{Colors.RESET}\n"
+        output += f"{Colors.CYAN}{'═' * 55}{Colors.RESET}\n"
+
+        for plat, content in all_content.items():
+            plat_display = plat.replace("_", " ").title()
+            output += f"\n{Colors.CYAN}{'─' * 50}{Colors.RESET}\n"
+            output += f"{Colors.GREEN}▶ {plat_display}{Colors.RESET}\n"
+            output += f"{Colors.CYAN}{'─' * 50}{Colors.RESET}\n"
+
+            if plat == "reddit":
+                output += f"{Colors.YELLOW}Title:{Colors.RESET} {content.get('title', '')}\n\n"
+                output += f"{content.get('body', '')}\n"
+            elif plat == "hacker_news":
+                output += f"{Colors.YELLOW}Title:{Colors.RESET} {content.get('title', '')}\n\n"
+                output += f"{Colors.YELLOW}First Comment:{Colors.RESET}\n{content.get('first_comment', '')}\n"
+            elif plat == "discord":
+                output += f"{content.get('message', '')}\n"
+            elif plat == "twitter":
+                output += f"{content.get('tweet', '')}\n"
+                if content.get("media_note"):
+                    output += f"\n{Colors.YELLOW}{content['media_note']}{Colors.RESET}"
+            output += "\n"
+
+        return output
+    else:
+        try:
+            content = engine.render(platform)
+        except ValueError as e:
+            return f"{Colors.RED}[ERROR] {e}{Colors.RESET}"
+
+        plat_display = platform.replace("_", " ").title()
+        output = f"\n{Colors.CYAN}{'═' * 55}{Colors.RESET}\n"
+        output += f"{Colors.GREEN}📣 {plat_display} — {engine._get('project.name', 'Unknown')}{Colors.RESET}\n"
+        output += f"{Colors.CYAN}{'═' * 55}{Colors.RESET}\n"
+
+        if platform == "reddit":
+            output += f"{Colors.YELLOW}Title:{Colors.RESET} {content.get('title', '')}\n\n"
+            output += f"{content.get('body', '')}\n"
+        elif platform == "hacker_news":
+            output += f"{Colors.YELLOW}Title:{Colors.RESET} {content.get('title', '')}\n\n"
+            output += f"{Colors.YELLOW}First Comment:{Colors.RESET}\n{content.get('first_comment', '')}\n"
+        elif platform == "discord":
+            output += f"{content.get('message', '')}\n"
+        elif platform == "twitter":
+            output += f"{content.get('tweet', '')}\n"
+            if content.get("media_note"):
+                output += f"\n{Colors.YELLOW}{content['media_note']}{Colors.RESET}"
+
+        return output
 
 
 def get_promotion_tips(platform: str) -> str:
