@@ -1,12 +1,12 @@
 ================================================================================
-         PROMOTION AGENT — Ready-to-Post Content for RedTeamAgent
-         Generated: 2026-05-18 | Project: RedTeamAgent
-         Repo: https://github.com/NTUNE1030/RedTeamAgent
+          PROMOTION AGENT — Ready-to-Post Content for blog-agent
+          Generated: 2026-05-18 | Project: blog-agent
+          Repo: https://github.com/NTUNE1030/blog-agent
 ================================================================================
 
 PROFILE SUMMARY
-  Author:  Steven — Event Production Specialist & Cybersecurity Researcher
-  Stack:   Python, Go & Bash
+  Author:  NTUNE1030 — Developer & Automation Engineer
+  Stack:   Python
   Status:  Active Development
   Platforms Enabled: Reddit, Hacker News, Discord, Twitter/X
 
@@ -16,28 +16,26 @@ REDDIT — r/netsec, r/HowToHack, r/Python
 ================================================================================
 
 TITLE:
-[Tool] RedTeamAgent: A framework integrating local/cloud LLMs with standard red teaming tools
+[Tool] blog-agent: An autonomous promotion framework with HITL authorization and dynamic plugin system
 
 BODY:
 Hey everyone,
 
-I recently built a framework called RedTeamAgent (primarily using Python, Go & Bash) to solve some of the automation bottlenecks I was hitting during vulnerability scanning and payload analysis.
+I recently built a framework called blog-agent (primarily using Python) to solve some of the automation bottlenecks I was hitting when building LLM-powered tools.
 
 **What it does:**
-RedTeamAgent bridges the gap between local/cloud Large Language Models and standard security tools (like those in Kali). Instead of manually piping outputs or writing custom parsers for every scan, the agent interprets the output and can suggest or chain the next logical step in the attack path.
+Blog Agent is a modular framework for building fully autonomous, self-correcting AI agents powered by large language models. It features a ReAct-style core loop, Human-In-The-Loop (HITL) authorization for safe execution, dynamic plugin auto-discovery, persistent ChromaDB vector memory, and a platform-specific promotion engine for Reddit, Hacker News, Discord, and X/Twitter.
 
 **How it's built:**
-Written in Python with Go modules for performance-critical parsing.
-Zero runtime dependencies for the core execution engine.
-Integrates directly with Bash for system-level tool execution.
+Written in Python for maximum flexibility and rapid prototyping.
 Human-In-The-Loop (HITL) authorization ensures safe automation.
 
 **Why I made it:**
-The sheer amount of manual data massaging required between running a scan, interpreting the results, and deciding on the next payload. Automating the repetitive parts of vulnerability management without losing granular control over execution. It's built to drop into restricted environments.
+Building and deploying LLM-powered agents safely requires a lot of boilerplate — HITL gates, plugin discovery, memory, logging, and platform-specific content formatting. Blog Agent packages all of this into a ready-to-use framework so you can focus on what your agent does, not how it runs.
 
-Source: https://github.com/NTUNE1030/RedTeamAgent
+Source: https://github.com/NTUNE1030/blog-agent
 
-I'd love to get feedback from anyone currently managing external exposure or running automated red team infrastructure. Are there specific tool integrations you feel are missing?
+I'd love to get feedback from anyone building with LLMs or working on autonomous agent architectures. What features would make this more useful for your workflow?
 
 TARGET SUBREDDITS: r/netsec, r/HowToHack, r/Python
 
@@ -55,21 +53,21 @@ HACKER NEWS — Show HN
 ================================================================================
 
 TITLE:
-Show HN: RedTeamAgent – An LLM framework for automating vulnerability scanning
+Show HN: blog-agent – An autonomous promotion framework with HITL authorization and dynamic plugin system
 
 REQUIRED FIRST COMMENT (post this immediately after submitting):
 Hi HN,
 
-I'm Steven, Event Production Specialist & Cybersecurity Researcher. I built RedTeamAgent to scratch my own itch while studying penetration testing.
+I'm NTUNE1030, Developer & Automation Engineer. I built blog-agent to scratch my own itch — building and deploying LLM-powered agents safely requires a lot of boilerplate — HITL gates, plugin discovery, memory, logging, and platform-specific content formatting. Blog Agent packages all of this into a ready-to-use framework so you can focus on what your agent does, not how it runs.
 
-The specific problem I hit was the sheer amount of manual data massaging required between running a scan, interpreting the results, and deciding on the next payload. Automating the repetitive parts of vulnerability management without losing granular control over execution. RedTeamAgent uses local or cloud LLMs to parse output from standard Kali tools and automate the decision-making loop.
+blog-agent uses local or cloud LLMs with a ReAct-style loop, HITL authorization gates, and dynamic plugin discovery so you can drop in new skills without touching the core.
 
 Technical constraints:
-Preventing the agent from hallucinating commands — implemented a strict JSON validation layer and sandbox to constrain the agent's actions.
+Preventing the agent from executing dangerous operations autonomously — implemented a 4-tier HITL risk classification system (LOW/MEDIUM/HIGH/CRITICAL) with argument-level escalation, session-based approval caching, and configurable approval timeouts.
 
-It's still in active development, but the core looping mechanism works. Would love feedback on the architecture, specifically around how you handle tool-chaining in automated environments.
+It's still in active development, but the core loop and HITL system work. Would love feedback on the architecture, specifically around how you handle safe autonomous execution in your own projects.
 
-Repo: https://github.com/NTUNE1030/RedTeamAgent
+Repo: https://github.com/NTUNE1030/blog-agent
 
 POSTING RULES:
   - "Show HN:" is strictly for things people can play with right now
@@ -85,19 +83,19 @@ DISCORD — Security/CTF Servers
 ================================================================================
 
 MESSAGE:
-Hey all, I just open-sourced a tool I've been working on called **RedTeamAgent**.
+Hey all, I just open-sourced a tool I've been working on called **blog-agent**.
 
-It's a Python/Go/Bash framework that hooks LLMs into standard cybersecurity tools to automate vulnerability scanning and malware analysis. If you are grinding CTFs or doing automated red teaming, it might save you some time parsing outputs.
+It's a Python framework — An autonomous promotion framework with HITL authorization and dynamic plugin system. If you're building with LLMs or need safe autonomous tool execution, it might save you some serious setup time.
 
 ```
-  • Bridges local/cloud LLMs with standard cybersecurity tools
-  • Automates vulnerability scanning and payload analysis
-  • Zero runtime dependencies for the core execution engine
-  • Integrates directly with Bash for system-level tool execution
-  • Python with Go modules for performance-critical parsing
+  • ReAct-style autonomous agent loop with session resumption
+  • Human-In-The-Loop (HITL) authorization with 4 risk levels
+  • Dynamic plugin system — drop Python files to add skills
+  • Platform-specific promotion engine (Reddit, HN, Discord, Twitter)
+  • Persistent ChromaDB vector memory for cross-session knowledge
 ```
 
-Check it out here: https://github.com/NTUNE1030/RedTeamAgent
+Check it out here: https://github.com/NTUNE1030/blog-agent
 Let me know if you break it or have feature requests—I tagged a few easy bugs as good first issue if anyone is looking to contribute!
 
 TARGET SERVERS: Security/CTF servers
@@ -116,19 +114,16 @@ X / TWITTER
 ================================================================================
 
 TWEET:
-Just pushed my newest project to GitHub! 🚀
+🚀 blog-agent — Python autonomous promotion framework with HITL authorization and dynamic plugin system. HITL auth keeps you in control.
 
-RedTeamAgent is a custom framework that integrates local & cloud LLMs directly with standard cybersecurity tools to automate vulnerability scanning and analysis.
+https://github.com/NTUNE1030/blog-agent
 
-Built with Python/Go/Bash. Check out the code here 👇
-https://github.com/NTUNE1030/RedTeamAgent
+#python #opensource #llm
 
-#infosec #python #cybersecurity #redteaming #opensource
-
-CHARACTER COUNT: 355 (within 280 char limit for tweet text, link will be shortened)
+CHARACTER COUNT: 202 (within 280 char limit)
 
 ⚠️  MEDIA IS MANDATORY: Attach a 1280x640 social preview image or 15-second
-    terminal GIF showing the agent completing a task before posting.
+     terminal GIF showing the agent completing a task before posting.
 
 POSTING RULES:
   - Attach visuals — 1280x640 social preview image or 15s terminal GIF
@@ -150,7 +145,7 @@ QUICK REFERENCE — CLI Commands
   python promote.py --platform twitter        Preview Twitter tweet
   python promote.py --save                   Save all to markdown files
   python promote.py --tips --platform reddit Show Reddit posting tips
-  python promote.py --set project.repo_url=https://github.com/you/repo
+  python promote.py --set project.repo_url=https://github.com/NTUNE1030/blog-agent
   python promote.py --summary                 Show profile configuration
 
 To customize: Edit promotion_profile.json at the project root.

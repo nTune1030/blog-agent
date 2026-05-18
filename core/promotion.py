@@ -33,7 +33,7 @@ from core.config import Colors, logger, CURRENT_SESSION_DIR, get_current_session
 
 REDDIT_TEMPLATE = """Hey everyone,
 
-I recently built a framework called {project_name} (primarily using {tech_stack}) to solve some of the automation bottlenecks I was hitting during vulnerability scanning and payload analysis.
+I recently built a framework called {project_name} (primarily using {tech_stack}) to solve some of the automation bottlenecks I was hitting when building LLM-powered tools.
 
 **What it does:**
 {project_description}
@@ -42,32 +42,32 @@ I recently built a framework called {project_name} (primarily using {tech_stack}
 {how_its_built}
 
 **Why I made it:**
-{problem_solved} It's built to drop into restricted environments.
+{problem_solved}
 
 Source: {repo_url}
 
-I'd love to get feedback from anyone currently managing external exposure or running automated red team infrastructure. Are there specific tool integrations you feel are missing?"""
+I'd love to get feedback from anyone building with LLMs or working on autonomous agent architectures. What features would make this more useful for your workflow?"""
 
-REDDIT_TITLE_TEMPLATE = "[Tool] {project_name}: A framework integrating local/cloud LLMs with standard red teaming tools"
+REDDIT_TITLE_TEMPLATE = "[Tool] {project_name}: {tagline}"
 
-HACKER_NEWS_TITLE_TEMPLATE = "Show HN: {project_name} – An LLM framework for automating vulnerability scanning"
+HACKER_NEWS_TITLE_TEMPLATE = "Show HN: {project_name} – {tagline}"
 
 HACKER_NEWS_COMMENT_TEMPLATE = """Hi HN,
 
-I'm {author_name}, {author_title}. I built {project_name} to scratch my own itch while studying penetration testing.
+I'm {author_name}, {author_title}. I built {project_name} to scratch my own itch — {problem_solved_lower}.
 
-The specific problem I hit was {problem_solved_lower}. {project_name} uses local or cloud LLMs to parse output from standard Kali tools and automate the decision-making loop.
+{project_name} uses local or cloud LLMs with a ReAct-style loop, HITL authorization gates, and dynamic plugin discovery so you can drop in new skills without touching the core.
 
 Technical constraints:
 {technical_challenge}
 
-It's still in active development, but the core looping mechanism works. Would love feedback on the architecture, specifically around how you handle tool-chaining in automated environments.
+It's still in active development, but the core loop and HITL system work. Would love feedback on the architecture, specifically around how you handle safe autonomous execution in your own projects.
 
 Repo: {repo_url}"""
 
 DISCORD_TEMPLATE = """Hey all, I just open-sourced a tool I've been working on called **{project_name}**.
 
-It's a {tech_stack_inline} framework that hooks LLMs into standard cybersecurity tools to automate vulnerability scanning and malware analysis. If you are grinding CTFs or doing automated red teaming, it might save you some time parsing outputs.
+It's a {tech_stack_inline} framework — {tagline}. If you're building with LLMs or need safe autonomous tool execution, it might save you some serious setup time.
 
 ```
 {key_features_inline}
@@ -76,15 +76,15 @@ It's a {tech_stack_inline} framework that hooks LLMs into standard cybersecurity
 Check it out here: {repo_url}
 Let me know if you break it or have feature requests{good_first_issues_note}!"""
 
-TWITTER_TEMPLATE = """🚀 {project_name} — {tech_stack_inline} framework bridging LLMs with cybersecurity tools. Automate vuln scanning with human-in-the-loop control.
+TWITTER_TEMPLATE = """🚀 {project_name} — {tech_stack_inline} {tagline_no_article}. HITL auth keeps you in control.
 
 {repo_url}
 
-#infosec #redteaming #opensource"""
+#python #opensource #llm"""
 
 TWITTER_THREAD_TEMPLATE = """🧵 Thread: {project_name}
 
-{project_name} bridges local/cloud LLMs with standard cybersecurity tools. Instead of manually piping outputs between scans, the agent interprets results and chains the next logical step.
+{project_name} is an autonomous agent framework with HITL authorization, dynamic plugins, and persistent vector memory. Build safe LLM-powered tools without the boilerplate.
 
 1/{thread_count}"""
 
@@ -96,7 +96,7 @@ TWITTER_THREAD_FINAL = """Built with {tech_stack_inline}. HITL auth ensures you 
 
 {repo_url}
 
-#infosec #redteaming #opensource {thread_count}/{thread_count}"""
+#python #opensource #llm {thread_count}/{thread_count}"""
 
 
 class PromotionEngine:
@@ -234,7 +234,8 @@ class PromotionEngine:
             return {"title": "[DISABLED]", "body": "Reddit promotion is disabled in promotion_profile.json"}
 
         title = REDDIT_TITLE_TEMPLATE.format(
-            project_name=self._get("project.name", "MyProject")
+            project_name=self._get("project.name", "MyProject"),
+            tagline=self._get("project.tagline", "")
         )
 
         body = REDDIT_TEMPLATE.format(
@@ -272,7 +273,8 @@ class PromotionEngine:
             return {"title": "[DISABLED]", "first_comment": "Hacker News promotion is disabled"}
 
         title = HACKER_NEWS_TITLE_TEMPLATE.format(
-            project_name=self._get("project.name", "MyProject")
+            project_name=self._get("project.name", "MyProject"),
+            tagline=self._get("project.tagline", "")
         )
 
         problem_solved = self._get("project.problem_solved", "")
@@ -313,6 +315,7 @@ class PromotionEngine:
         message = DISCORD_TEMPLATE.format(
             project_name=self._get("project.name", "MyProject"),
             tech_stack_inline=self._tech_stack_inline(),
+            tagline=self._get("project.tagline", ""),
             key_features_inline=self._key_features_inline(),
             repo_url=self._get("project.repo_url", "[Insert Link]"),
             good_first_issues_note=self._good_first_issues_note()
@@ -346,9 +349,18 @@ class PromotionEngine:
         if not self._get("platforms.twitter.enabled", False):
             return {"tweet": "[DISABLED] Twitter promotion is disabled", "platform": "twitter"}
 
+        # Strip leading "A/An " from tagline for inline use
+        tagline_raw = self._get("project.tagline", "")
+        tagline_no_article = tagline_raw
+        for prefix in ("A ", "An "):
+            if tagline_raw.startswith(prefix):
+                tagline_no_article = tagline_raw[len(prefix):]
+                break
+
         tweet = TWITTER_TEMPLATE.format(
             project_name=self._get("project.name", "MyProject"),
             tech_stack_inline=self._tech_stack_inline(),
+            tagline_no_article=tagline_no_article,
             repo_url=self._get("project.repo_url", "[Insert GitHub Link]")
         )
 
@@ -369,7 +381,7 @@ class PromotionEngine:
             # Build a thread from profile data
             key_features = self._get("project.key_features", [])
             # Pick top 3 features for thread points
-            thread_points = key_features[:3] if key_features else ["Bridges LLMs with cybersecurity tools"]
+            thread_points = key_features[:3] if key_features else ["Autonomous agent framework with HITL authorization"]
             thread_count = 2 + len(thread_points)  # opener + feature tweets + closer
 
             thread_tweets: list[str] = []
@@ -390,7 +402,7 @@ class PromotionEngine:
                 feature_tweet = TWITTER_THREAD_TWEET.format(
                     project_name=self._get("project.name", "MyProject"),
                     thread_point=point,
-                    thread_hashtag="#infosec"
+                    thread_hashtag="#python"
                 )
                 if len(feature_tweet) > 280:
                     feature_tweet = feature_tweet[:277] + "..."
