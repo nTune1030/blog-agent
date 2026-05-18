@@ -3,6 +3,7 @@ Posting tools — Agent-callable functions for posting promotional content to pl
 
 These tools use platform APIs to actually post content:
   - Reddit: PRAW (Python Reddit API Wrapper) — posts link/text submissions
+    Fallback: Selenium browser automation when API access is not available
   - Twitter/X: Tweepy — posts tweets with optional media
   - Discord: Webhook URLs — sends messages to channel webhooks
   - Hacker News: NO API — must be posted manually
@@ -49,7 +50,15 @@ def _check_credentials(platform: str) -> tuple[bool, str]:
         required = ["client_id", "client_secret", "username", "password"]
         missing = [f for f in required if not reddit_creds.get(f)]
         if missing:
-            return False, f"Missing Reddit credentials: {', '.join(missing)}. Edit promotion_profile.json → api_credentials.reddit"
+            return False, f"Missing Reddit API credentials: {', '.join(missing)}. Edit promotion_profile.json → api_credentials.reddit OR use browser fallback (see reddit_browser_ops.py)"
+        return True, ""
+
+    elif platform == "reddit_browser":
+        reddit_creds = creds.get("reddit", {})
+        required = ["username", "password"]
+        missing = [f for f in required if not reddit_creds.get(f)]
+        if missing:
+            return False, f"Missing Reddit browser credentials: {', '.join(missing)}. Edit promotion_profile.json → api_credentials.reddit (only username and password needed for browser mode)"
         return True, ""
 
     elif platform == "twitter":
@@ -77,35 +86,54 @@ def _check_credentials(platform: str) -> tuple[bool, str]:
 
 
 @hitl_risk(RiskLevel.CRITICAL)
-def post_to_reddit(subreddit: str, title: str, body: str, is_link_post: bool = False) -> str:
-    """Post a submission to a Reddit subreddit using PRAW.
+def post_to_reddit(subreddit: str, title: str, body: str, is_link_post: bool = False,
+                   use_browser: bool = False) -> str:
+    """Post a submission to a Reddit subreddit using PRAW or browser fallback.
 
     CRITICAL RISK: This performs an irreversible public action. Requires explicit
     operator approval (must type YES) before executing.
+
+    By default, uses PRAW (Reddit API). If PRAW credentials are not configured
+    or use_browser is True, falls back to Selenium browser automation which
+    only requires username and password (no API app needed).
 
     Args:
         subreddit: Target subreddit name (without the 'r/', e.g. 'netsec')
         title: Post title
         body: Post body text (for text posts) or URL (for link posts)
         is_link_post: If True, body is treated as a URL for a link post
+        use_browser: If True, force browser-based posting instead of PRAW
 
     Returns:
         Confirmation message with post URL, or error message.
     """
-    # Check credentials
-    configured, missing_msg = _check_credentials("reddit")
-    if not configured:
-        return f"[ERROR] {missing_msg}"
+    # Clean subreddit name (strip r/ prefix if present)
+    clean_sub = subreddit.replace("r/", "").strip()
 
+    # Check if we should use browser mode
+    praw_configured, _ = _check_credentials("reddit")
+    browser_configured, browser_missing = _check_credentials("reddit_browser")
+
+    if use_browser or not praw_configured:
+        # Fall back to browser-based posting
+        if not browser_configured:
+            return f"[ERROR] {browser_missing}"
+
+        logger.info(f"Using browser fallback for Reddit post to r/{clean_sub}")
+        from tools.reddit_browser_ops import post_to_reddit_browser
+        return post_to_reddit_browser(
+            subreddit=clean_sub,
+            title=title,
+            body=body
+        )
+
+    # Use PRAW (API) mode
     creds = _load_credentials().get("reddit", {})
 
     try:
         import praw
     except ImportError:
         return "[ERROR] PRAW not installed. Run: pip install praw"
-
-    # Clean subreddit name (strip r/ prefix if present)
-    clean_sub = subreddit.replace("r/", "").strip()
 
     try:
         reddit = praw.Reddit(
@@ -326,12 +354,16 @@ def post_to_all_platforms(dry_run: bool = True) -> str:
     # ─── Reddit ────────────────────────────────────────────────────────
     if "reddit" in all_content:
         reddit = all_content["reddit"]
-        configured, missing = _check_credentials("reddit")
+        praw_configured, praw_missing = _check_credentials("reddit")
+        browser_configured, browser_missing = _check_credentials("reddit_browser")
 
-        if not configured:
-            results.append(f"Reddit: ⏭️ SKIPPED — {missing}")
+        if not praw_configured and not browser_configured:
+            results.append(f"Reddit: ⏭️ SKIPPED — No API or browser credentials")
+            results.append(f"  API: {praw_missing}")
+            results.append(f"  Browser: {browser_missing}")
         elif dry_run:
-            results.append(f"Reddit: 📋 READY — r/{', '.join(s.replace('r/', '') for s in reddit.get('subreddits', []))}")
+            mode = "PRAW API" if praw_configured else "Browser fallback"
+            results.append(f"Reddit: 📋 READY ({mode}) — r/{', '.join(s.replace('r/', '') for s in reddit.get('subreddits', []))}")
             results.append(f"  Title: {reddit.get('title', '')}")
             results.append(f"  Body preview: {reddit.get('body', '')[:100]}...")
         else:
@@ -341,7 +373,8 @@ def post_to_all_platforms(dry_run: bool = True) -> str:
                 result = post_to_reddit(
                     subreddit=clean_sub,
                     title=reddit.get("title", ""),
-                    body=reddit.get("body", "")
+                    body=reddit.get("body", ""),
+                    use_browser=not praw_configured
                 )
                 results.append(f"Reddit r/{clean_sub}: {result}")
 
@@ -401,7 +434,8 @@ def check_posting_readiness() -> str:
     """Check which platforms have API credentials configured and are ready to post.
 
     Returns a formatted status report showing which platforms can post automatically,
-    which need credentials, and which require manual posting.
+    which need credentials, and which require manual posting. For Reddit, also
+    checks browser fallback readiness when PRAW API is not configured.
 
     Returns:
         Formatted readiness report for all platforms.
@@ -412,15 +446,16 @@ def check_posting_readiness() -> str:
     output = f"\n{Colors.CYAN}═══ POSTING READINESS CHECK ═══{Colors.RESET}\n\n"
 
     platforms = {
-        "reddit": {"name": "Reddit", "has_api": True},
-        "hacker_news": {"name": "Hacker News", "has_api": False},
-        "discord": {"name": "Discord", "has_api": True},
-        "twitter": {"name": "Twitter/X", "has_api": True},
+        "reddit": {"name": "Reddit", "has_api": True, "has_browser_fallback": True},
+        "hacker_news": {"name": "Hacker News", "has_api": False, "has_browser_fallback": False},
+        "discord": {"name": "Discord", "has_api": True, "has_browser_fallback": False},
+        "twitter": {"name": "Twitter/X", "has_api": True, "has_browser_fallback": False},
     }
 
     for key, info in platforms.items():
         display = info["name"]
         has_api = info["has_api"]
+        has_browser = info.get("has_browser_fallback", False)
         enabled = key in all_content
 
         if not enabled:
@@ -435,12 +470,24 @@ def check_posting_readiness() -> str:
         configured, missing = _check_credentials(key)
 
         if configured:
-            output += f"  {display}: {Colors.GREEN}READY TO POST{Colors.RESET} ✅\n"
+            output += f"  {display}: {Colors.GREEN}READY TO POST{Colors.RESET} ✅ (API)\n"
+        elif has_browser:
+            # Check browser fallback
+            browser_ok, browser_missing = _check_credentials(f"{key}_browser")
+            if browser_ok:
+                output += f"  {display}: {Colors.YELLOW}READY (Browser){Colors.RESET} 🌐\n"
+                output += f"    → API not configured, but browser fallback is available\n"
+                output += f"    → Set Reddit API credentials for full API mode\n"
+            else:
+                output += f"  {display}: {Colors.YELLOW}NEEDS CREDENTIALS{Colors.RESET} ⚠️\n"
+                output += f"    → API: {missing}\n"
+                output += f"    → Browser: {browser_missing}\n"
         else:
             output += f"  {display}: {Colors.YELLOW}NEEDS CREDENTIALS{Colors.RESET} ⚠️\n"
             output += f"    → {missing}\n"
 
     output += f"\n{Colors.GRAY}To add credentials: Edit promotion_profile.json → api_credentials{Colors.RESET}"
+    output += f"\n{Colors.GRAY}Reddit browser fallback: Only username & password needed (no API app){Colors.RESET}"
     output += f"\n{Colors.GRAY}To post: python promote.py --post (dry run first, then --post --confirm){Colors.RESET}"
 
     return output

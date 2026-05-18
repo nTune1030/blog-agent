@@ -38,5 +38,8 @@ promotion_profile.json
 .DS_Store
 Thumbs.db
 
+# Scratch/debug files (temporary test scripts, debug output)
+scratch/
+
 # Logs
 *.log
