@@ -131,18 +131,22 @@ async def _reddit_login_async(page, username: str, password: str, timeout: int =
     try:
         # Navigate to login — use 'domcontentloaded' instead of 'networkidle'
         # because Reddit never reaches a fully idle network state (analytics, websockets, etc.)
+        # Reddit's JS challenge may cause ERR_ABORTED (redirect), which is normal.
         print(f"{Colors.CYAN}[*] Navigating to Reddit login...{Colors.RESET}")
-        await page.goto('https://www.reddit.com/login/', wait_until='domcontentloaded', timeout=60000)
-        await page.wait_for_timeout(3000)
+        try:
+            await page.goto('https://www.reddit.com/login/', wait_until='domcontentloaded', timeout=60000)
+        except Exception as nav_err:
+            # ERR_ABORTED is expected when Reddit's JS challenge redirects — continue
+            if 'ERR_ABORTED' in str(nav_err):
+                logger.info(f"Navigation aborted (JS challenge redirect), continuing: {nav_err}")
+            else:
+                raise
 
-        # Check if we got past the JS challenge
-        current_url = page.url
-        if 'js_challenge' in current_url:
-            print(f"{Colors.YELLOW}[*] JS challenge detected, waiting for resolution...{Colors.RESET}")
-            await page.wait_for_timeout(15000)
+        # Wait for JS challenge to resolve and login form to appear.
+        # Reddit may serve a JS challenge that redirects — we need to wait
+        # for the actual login form, not just a fixed timeout.
+        print(f"{Colors.CYAN}[*] Waiting for login form (handling JS challenge if needed)...{Colors.RESET}")
 
-        # Wait for login form
-        print(f"{Colors.CYAN}[*] Looking for login form...{Colors.RESET}")
         username_selectors = [
             "input[name='username']",
             "input#loginUsername",
@@ -150,14 +154,27 @@ async def _reddit_login_async(page, username: str, password: str, timeout: int =
         ]
 
         username_field = None
-        for selector in username_selectors:
-            try:
-                username_field = await page.wait_for_selector(selector, timeout=15000)
-                if username_field:
-                    logger.info(f"Found username field: {selector}")
-                    break
-            except Exception:
-                continue
+        # Try for up to 45 seconds — JS challenge can take 10-20s to resolve
+        for attempt in range(9):  # 9 x 5s = 45s
+            for selector in username_selectors:
+                try:
+                    username_field = await page.query_selector(selector)
+                    if username_field:
+                        logger.info(f"Found username field: {selector}")
+                        break
+                except Exception:
+                    continue
+            if username_field:
+                break
+
+            # Check if we're on a JS challenge page
+            current_url = page.url
+            if 'js_challenge' in current_url:
+                print(f"{Colors.YELLOW}[*] JS challenge detected (attempt {attempt+1}/9), waiting...{Colors.RESET}")
+            else:
+                print(f"{Colors.CYAN}[*] Login form not found yet (attempt {attempt+1}/9), waiting...{Colors.RESET}")
+
+            await page.wait_for_timeout(5000)
 
         if not username_field:
             logger.error("Could not find username field — Reddit may be blocking the browser")
