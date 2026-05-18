@@ -129,18 +129,17 @@ async def _reddit_login_async(page, username: str, password: str, timeout: int =
         True if login succeeded, False otherwise
     """
     try:
-        # Navigate to login — use 'domcontentloaded' instead of 'networkidle'
-        # because Reddit never reaches a fully idle network state (analytics, websockets, etc.)
-        # Reddit's JS challenge may cause ERR_ABORTED (redirect), which is normal.
+        # Navigate to login. Reddit's JS challenge causes ERR_ABORTED on
+        # domcontentloaded/networkidle waits. Use 'commit' (returns as soon as
+        # navigation is initiated) and then poll for the login form to appear.
         print(f"{Colors.CYAN}[*] Navigating to Reddit login...{Colors.RESET}")
         try:
-            await page.goto('https://www.reddit.com/login/', wait_until='domcontentloaded', timeout=60000)
+            await page.goto('https://www.reddit.com/login/', wait_until='commit', timeout=30000)
         except Exception as nav_err:
-            # ERR_ABORTED is expected when Reddit's JS challenge redirects — continue
-            if 'ERR_ABORTED' in str(nav_err):
-                logger.info(f"Navigation aborted (JS challenge redirect), continuing: {nav_err}")
-            else:
-                raise
+            # Any navigation error (ERR_ABORTED, timeout, etc.) is acceptable —
+            # the page may have already redirected via JS challenge. Just continue
+            # and poll for the login form.
+            logger.info(f"Navigation error (expected with JS challenge): {nav_err}")
 
         # Wait for JS challenge to resolve and login form to appear.
         # Reddit may serve a JS challenge that redirects — we need to wait
@@ -154,8 +153,8 @@ async def _reddit_login_async(page, username: str, password: str, timeout: int =
         ]
 
         username_field = None
-        # Try for up to 45 seconds — JS challenge can take 10-20s to resolve
-        for attempt in range(9):  # 9 x 5s = 45s
+        # Try for up to 60 seconds — JS challenge can take 10-20s to resolve
+        for attempt in range(12):  # 12 x 5s = 60s
             for selector in username_selectors:
                 try:
                     username_field = await page.query_selector(selector)
@@ -170,9 +169,9 @@ async def _reddit_login_async(page, username: str, password: str, timeout: int =
             # Check if we're on a JS challenge page
             current_url = page.url
             if 'js_challenge' in current_url:
-                print(f"{Colors.YELLOW}[*] JS challenge detected (attempt {attempt+1}/9), waiting...{Colors.RESET}")
+                print(f"{Colors.YELLOW}[*] JS challenge detected (attempt {attempt+1}/12), waiting...{Colors.RESET}")
             else:
-                print(f"{Colors.CYAN}[*] Login form not found yet (attempt {attempt+1}/9), waiting...{Colors.RESET}")
+                print(f"{Colors.CYAN}[*] Login form not found yet (attempt {attempt+1}/12), waiting...{Colors.RESET}")
 
             await page.wait_for_timeout(5000)
 
